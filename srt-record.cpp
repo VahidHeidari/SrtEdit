@@ -11,7 +11,6 @@ string SrtRecord::ToString() const
 	str << number << endl;
 	str << start.ToString() << " --> " << end.ToString() << endl;
 	str << text << endl;
-	str << endl;
 	return str.str();
 }
 

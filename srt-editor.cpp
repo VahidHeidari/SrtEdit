@@ -143,15 +143,18 @@ void SrtEditor::Print(const std::string& command) const
 
 bool SrtEditor::Save(const std::string& command) const
 {
-	std::string path = command.substr(6);
+	std::string path = command.substr(5);
 
 	ofstream output_file(path.c_str());
-	if (!output_file.is_open())
+	if (!output_file.is_open()) {
+		cout << "Could not open a file for save into!" << endl;
 		return false;
+	}
 
 	for (unsigned i = 0; i < records.size(); ++i)
-		output_file << records[i] << endl << endl;
+		output_file << records[i];
 
+	cout << "Save done!" << endl;
 	return true;
 }
 
