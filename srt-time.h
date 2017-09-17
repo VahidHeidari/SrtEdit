@@ -20,6 +20,10 @@
 class SrtTime
 {
 public:
+	SrtTime();
+	SrtTime(int h, int m, int s, int ms);
+	SrtTime(const SrtTime& other);
+
 	std::string ToString() const;
 
 	int hours;
@@ -29,6 +33,9 @@ public:
 };
 
 
+
+SrtTime operator+(const SrtTime& f, const SrtTime& s);
+SrtTime operator-(const SrtTime& f, const SrtTime& s);
 
 std::ostream& operator<<(std::ostream& output, const SrtTime& t);
 std::istream& operator>>(std::istream& input, SrtTime& t);
