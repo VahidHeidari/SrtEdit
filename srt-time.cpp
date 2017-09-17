@@ -69,9 +69,66 @@ SrtTime operator+(const SrtTime& f, const SrtTime& s)
 
 SrtTime operator-(const SrtTime& f, const SrtTime& s)
 {
+	(void)f; (void)s;
+
 	SrtTime r;
 	return r;
 }
+
+bool operator==(const SrtTime& f, const SrtTime& s)
+{
+	return f.hours == s.hours
+		&& f.minutes == s.minutes
+		&& f.seconds == s.seconds
+		&& f.milliseconds == s.milliseconds;
+}
+
+bool operator!=(const SrtTime& f, const SrtTime& s)
+{
+	return !(f == s);
+}
+
+bool operator<(const SrtTime& f, const SrtTime& s)
+{
+	if (f.hours > s.hours)
+		return false;
+
+	if (f.hours == s.hours) {
+		if (f.minutes > s.minutes)
+			return false;
+
+		if (f.minutes == s.minutes) {
+			if (f.seconds > s.seconds)
+				return false;
+
+			if (f.seconds == s.seconds)
+				return f.milliseconds < s.milliseconds;
+			else
+				return true;
+		} else
+			return true;
+	} else
+		return true;
+
+	return false;
+}
+
+bool operator<=(const SrtTime& f, const SrtTime& s)
+{
+	return f < s || f == s;
+}
+
+bool operator>(const SrtTime& f, const SrtTime& s)
+{
+	return s < f;
+}
+
+bool operator>=(const SrtTime& f, const SrtTime& s)
+{
+	return f > s || f == s;
+}
+
+
 
 std::ostream& operator<<(std::ostream& output, const SrtTime& t)
 {

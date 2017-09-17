@@ -11,6 +11,7 @@ class SrtEditor
 public:
 	enum CommandType
 	{
+		CMD_HELP,
 		CMD_PRINT,
 		CMD_SAVE,
 		CMD_SYNC,

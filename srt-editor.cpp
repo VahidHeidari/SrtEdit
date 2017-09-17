@@ -1,10 +1,50 @@
 #include "srt-editor.h"
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <utility>
 
 using namespace std;
+
+typedef pair<int, int> Range;
+
+static inline int ToString(const char* str)
+{
+	int num = 0;
+	char ch = *str;
+	while (ch && isdigit(ch)) {
+		num *= 10;
+		num += *str - 0x30;
+		ch = *(++str);
+	}
+
+	return num;
+}
+
+static Range ParseRange(const std::string& str, int end)
+{
+	// Find numbers positions.
+	string::size_type first_num = str.find("from:") + 5;
+	string::size_type second_num = str.find("to:", first_num);
+
+	// Parse numbers.
+	int first_record = ToString(str.c_str() + first_num);
+	int second_record;
+	if (second_num == string::npos)
+		second_record = end;
+	else
+		second_record = ToString(str.c_str() + second_num + 3);
+
+
+	if (first_record > second_record)
+		swap(first_record, second_record);
+
+	return make_pair(first_record - 1, second_record);
+}
+
+
 
 SrtEditor::SrtEditor()
 {
@@ -18,8 +58,10 @@ void SrtEditor::DoActions()
 {
 	string command;
 
+	PrintCommands();
+
 	do {
-		PrintCommands();
+		cout << "> ";		// Print prompt.
 		getline(cin, command);
 		DoCommand(command);
 	} while (command != "quit");
@@ -72,13 +114,16 @@ void SrtEditor::DoCommand(const string& command)
 	CommandType type = FindCommandType(command);
 
 	switch (type) {
+		case CMD_HELP:			PrintCommands();		break;
+		case CMD_PRINT:			Print(command);			break;
 		case CMD_SAVE:			Save(command);			break;
 		case CMD_SYNC:			Sync(command);			break;
 		case CMD_SYNC_RECORDS:	SyncRecords(command);	break;
+		case CMD_QUIT:									break;
 
-		case CMD_QUIT:
 		case CMD_UNKNOWN:
 		default:
+			cout << "Unknown command!" << endl << endl;
 			break;
 	}
 }
@@ -89,34 +134,36 @@ SrtEditor::FindCommandType(const string& command) const
 	if (command.empty())
 		return CMD_UNKNOWN;
 
-	if (command == "quit")
-		return CMD_QUIT;
-
 	switch (command[0]) {
+		case 'f':
+			if (strncmp(command.c_str(), "from:", 5) == 0)
+				return CMD_SYNC_RECORDS;
+			break;
+
+		case 'h':
+			if (command == "help")
+				return CMD_HELP;
+			break;
+
 		case 'p':
 			if (command.size() < 5)
 				break;
-
 			if (strncmp(command.c_str(), "print", 5) == 0)
 				return CMD_PRINT;
-
 			break;
 
 		case 's':
 			if (command.size() < 4)
 				break;
-
 			if (strncmp(command.c_str(), "save", 4) == 0)
 				return CMD_SAVE;
 			else if (strncmp(command.c_str(), "sync", 4) == 0)
 				return CMD_SYNC;
-
 			break;
 
-		case 'f':
-			if (strncmp(command.c_str(), "from:", 5) == 0)
-				return CMD_SYNC_RECORDS;
-
+		case 'q':
+			if (command == "quit")
+				return CMD_QUIT;
 			break;
 
 		default:
@@ -128,7 +175,9 @@ SrtEditor::FindCommandType(const string& command) const
 
 void SrtEditor::PrintCommands() const
 {
+	cout << "help                     This help menu." << endl;
 	cout << "quit                     Quits the application!" << endl;
+	cout << "print from:REC to:REC    Print from-to." << endl;
 	cout << "save PATH                "
 		<< "Saves the modified srt file to the given path." << endl;
 	cout << "sync TIME                Syncs all records." << endl;
@@ -138,7 +187,11 @@ void SrtEditor::PrintCommands() const
 
 void SrtEditor::Print(const std::string& command) const
 {
-	(void)command;
+	Range range = ParseRange(command.substr(5), records.size());
+
+	// Print records.
+	while (range.first < range.second)
+		cout << records[range.first++];
 }
 
 bool SrtEditor::Save(const std::string& command) const

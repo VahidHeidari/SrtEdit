@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 
 #include "srt-editor.h"
@@ -8,8 +9,6 @@ using namespace std;
 
 static void TestToString()
 {
-	return;
-
 	SrtTime t1(0, 3, 5, 109);
 	cout << t1 << endl;
 
@@ -25,6 +24,19 @@ static void TestTimeOperators()
 	SrtTime t1(0, 0, 0, 999);
 	SrtTime t2(0, 0, 0, 1);
 	cout << t1 + t2 << endl;
+
+	cout << boolalpha << (t1 < t2) << endl;
+	cout << boolalpha << (t1 > t2) << endl;
+	cout << boolalpha << (t1 == t2) << endl;
+	cout << boolalpha << (t1 != t2) << endl;
+}
+
+static void PrintTests()
+{
+	return;
+
+	TestToString();
+	TestTimeOperators();
 }
 
 static void PrintArgs(int argc, char** argv)
@@ -48,8 +60,7 @@ static void CheckInputFile(int argc, char** argv)
 int main(int argc, char** argv)
 {
 	CheckInputFile(argc, argv);
-	TestToString();
-	TestTimeOperators();
+	PrintTests();
 
 	SrtEditor editor;
 	if (!editor.ReadRecords(argv[1]))
