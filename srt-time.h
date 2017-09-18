@@ -21,11 +21,15 @@ class SrtTime
 {
 public:
 	SrtTime();
-	SrtTime(int h, int m, int s, int ms);
+	explicit SrtTime(long ms);
+	SrtTime(int h, int m, int s, int ms, bool is_negative = false);
 	SrtTime(const SrtTime& other);
 
+	void FromMilliseconds(long ms);
+	long ToMilliseconds() const;
 	std::string ToString() const;
 
+	bool is_negative;
 	int hours;
 	int minutes;
 	int seconds;
@@ -35,6 +39,7 @@ public:
 
 
 SrtTime operator+(const SrtTime& f, const SrtTime& s);
+SrtTime& operator+=(SrtTime& f, long ms);
 SrtTime operator-(const SrtTime& f, const SrtTime& s);
 bool operator==(const SrtTime& f, const SrtTime& s);
 bool operator!=(const SrtTime& f, const SrtTime& s);

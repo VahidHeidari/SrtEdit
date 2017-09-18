@@ -10,16 +10,24 @@ using namespace std;
 
 typedef pair<int, int> Range;
 
-static inline int ToString(const char* str)
+static inline int ToInt(const char* str)
 {
+	bool is_negative = false;
 	int num = 0;
 	char ch = *str;
+
+	if (ch == '-') {
+		is_negative = true;
+		++str;
+	}
+
 	while (ch && isdigit(ch)) {
 		num *= 10;
 		num += *str - 0x30;
 		ch = *(++str);
 	}
 
+	num *= is_negative ? -1 : 1;
 	return num;
 }
 
@@ -30,18 +38,25 @@ static Range ParseRange(const std::string& str, int end)
 	string::size_type second_num = str.find("to:", first_num);
 
 	// Parse numbers.
-	int first_record = ToString(str.c_str() + first_num);
+	int first_record = ToInt(str.c_str() + first_num);
 	int second_record;
 	if (second_num == string::npos)
 		second_record = end;
 	else
-		second_record = ToString(str.c_str() + second_num + 3);
+		second_record = min(ToInt(str.c_str() + second_num + 3), end);
 
 
 	if (first_record > second_record)
 		swap(first_record, second_record);
 
 	return make_pair(first_record - 1, second_record);
+}
+
+static long ParseMilliseconds(const std::string& str)
+{
+	string::size_type time_start = str.find("time:") + 5;
+	long ms = ToInt(str.c_str() + time_start);
+	return ms;
 }
 
 
@@ -58,7 +73,7 @@ void SrtEditor::DoActions()
 {
 	string command;
 
-	PrintCommands();
+	cout << "Ready! Enter 'help' for list of commands." << endl;
 
 	do {
 		cout << "> ";		// Print prompt.
@@ -70,6 +85,17 @@ void SrtEditor::DoActions()
 void SrtEditor::PrintStats() const
 {
 	cout << "Number of records : " << records.size() << endl;
+
+	if (records.size()) {
+		const SrtTime& start = records[0].start;
+		cout << "Start : " << start << endl;
+
+		const SrtTime& end = records[records.size() - 1].end;
+		cout << "End   : " << end << endl;
+
+		SrtTime duration = end - start;
+		cout << "Duration          : " << duration << endl;
+	}
 }
 
 bool SrtEditor::ReadRecords(const char* file_path)
@@ -116,6 +142,7 @@ void SrtEditor::DoCommand(const string& command)
 	switch (type) {
 		case CMD_HELP:			PrintCommands();		break;
 		case CMD_PRINT:			Print(command);			break;
+		case CMD_PRINT_STATS:	PrintStats();			break;
 		case CMD_SAVE:			Save(command);			break;
 		case CMD_SYNC:			Sync(command);			break;
 		case CMD_SYNC_RECORDS:	SyncRecords(command);	break;
@@ -135,11 +162,6 @@ SrtEditor::FindCommandType(const string& command) const
 		return CMD_UNKNOWN;
 
 	switch (command[0]) {
-		case 'f':
-			if (strncmp(command.c_str(), "from:", 5) == 0)
-				return CMD_SYNC_RECORDS;
-			break;
-
 		case 'h':
 			if (command == "help")
 				return CMD_HELP;
@@ -148,13 +170,26 @@ SrtEditor::FindCommandType(const string& command) const
 		case 'p':
 			if (command.size() < 5)
 				break;
+
+			if (command == "pstats")
+				return CMD_PRINT_STATS;
+
 			if (strncmp(command.c_str(), "print", 5) == 0)
 				return CMD_PRINT;
+			break;
+
+		case 'r':
+			if (command.size() < 5)
+				return CMD_UNKNOWN;
+
+			if (strncmp(command.c_str(), "rsync", 5) == 0)
+				return CMD_SYNC_RECORDS;
 			break;
 
 		case 's':
 			if (command.size() < 4)
 				break;
+
 			if (strncmp(command.c_str(), "save", 4) == 0)
 				return CMD_SAVE;
 			else if (strncmp(command.c_str(), "sync", 4) == 0)
@@ -175,19 +210,19 @@ SrtEditor::FindCommandType(const string& command) const
 
 void SrtEditor::PrintCommands() const
 {
-	cout << "help                     This help menu." << endl;
-	cout << "quit                     Quits the application!" << endl;
-	cout << "print from:REC to:REC    Print from-to." << endl;
-	cout << "save PATH                "
+	cout << "help                         This help menu." << endl;
+	cout << "quit                         Quits the application!" << endl;
+	cout << "print from:REC to:REC        Print from-to." << endl;
+	cout << "save PATH                    "
 		<< "Saves the modified srt file to the given path." << endl;
-	cout << "sync TIME                Syncs all records." << endl;
-	cout << "from:REC to:RED TIME     Sync records from-to." << endl;
+	cout << "sync TIME                    Syncs all records." << endl;
+	cout << "rsync from:REC to:RED TIME   Sync records from-to." << endl;
 	cout << endl;
 }
 
 void SrtEditor::Print(const std::string& command) const
 {
-	Range range = ParseRange(command.substr(5), records.size());
+	Range range = ParseRange(command, records.size());
 
 	// Print records.
 	while (range.first < range.second)
@@ -218,6 +253,14 @@ void SrtEditor::Sync(const std::string& command)
 
 void SrtEditor::SyncRecords(const std::string& command)
 {
-	(void)command;
+	Range range = ParseRange(command, records.size());
+	long ms = ParseMilliseconds(command);
+
+	while (range.first < range.second) {
+		int i = range.first;
+		records[i].start += ms;
+		records[i].end += ms;
+		++range.first;
+	}
 }
 

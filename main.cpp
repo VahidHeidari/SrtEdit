@@ -66,7 +66,6 @@ int main(int argc, char** argv)
 	if (!editor.ReadRecords(argv[1]))
 		return 1;
 
-	editor.PrintStats();
 	editor.DoActions();
 
 	return 0;

@@ -13,6 +13,7 @@ public:
 	{
 		CMD_HELP,
 		CMD_PRINT,
+		CMD_PRINT_STATS,
 		CMD_SAVE,
 		CMD_SYNC,
 		CMD_SYNC_RECORDS,

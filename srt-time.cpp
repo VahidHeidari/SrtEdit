@@ -6,15 +6,22 @@
 using namespace std;
 
 SrtTime::SrtTime()
-	: hours(0)
+	: is_negative(false)
+	, hours(0)
 	, minutes(0)
 	, seconds(0)
 	, milliseconds(0)
 {
 }
 
-SrtTime::SrtTime(int h, int m, int s, int ms)
-	: hours(h)
+SrtTime::SrtTime(long ms)
+{
+	FromMilliseconds(ms);
+}
+
+SrtTime::SrtTime(int h, int m, int s, int ms, bool is_negative)
+	: is_negative(is_negative)
+	, hours(h)
 	, minutes(m)
 	, seconds(s)
 	, milliseconds(ms)
@@ -22,16 +29,48 @@ SrtTime::SrtTime(int h, int m, int s, int ms)
 }
 
 SrtTime::SrtTime(const SrtTime& other)
-	: hours(other.hours)
+	: is_negative(other.is_negative)
+	, hours(other.hours)
 	, minutes(other.minutes)
 	, seconds(other.seconds)
 	, milliseconds(other.milliseconds)
 {
 }
 
+void SrtTime::FromMilliseconds(long ms)
+{
+	is_negative = false;
+	if (ms < 0) {
+		is_negative = true;
+		ms = -ms;
+	}
+
+	milliseconds = ms % 1000;
+	ms /= 1000;
+	seconds = ms % 60;
+	ms /= 60;
+	minutes = ms % 60;
+	ms /= 60;
+	hours = ms;
+}
+
+long SrtTime::ToMilliseconds() const
+{
+	long ms = milliseconds;
+	ms += seconds * 1000;
+	ms += minutes * 60 * 1000;
+	ms += hours * 60 * 60 * 1000;
+
+	ms *= is_negative ? -1 : 1;
+
+	return ms;
+}
+
 string SrtTime::ToString() const
 {
 	stringstream str;
+	if (is_negative)
+		str << '-';
 	str << setfill('0') << setw(2) << hours   << ':';
 	str << setfill('0') << setw(2) << minutes << ':';
 	str << setfill('0') << setw(2) << seconds << ',';
@@ -41,43 +80,31 @@ string SrtTime::ToString() const
 
 
 
-inline static void Adjust(int& c, int& n, int bound)
-{
-	while (c >= bound) {
-		c -= bound;
-		++n;
-	}
-}
-
 SrtTime operator+(const SrtTime& f, const SrtTime& s)
 {
-	SrtTime r (f);
-
-	r.milliseconds += s.milliseconds;
-	Adjust(r.milliseconds, r.seconds, 1000);
-
-	r.seconds += s.seconds;
-	Adjust(r.seconds, r.minutes, 60);
-
-	r.minutes += s.minutes;
-	Adjust(r.minutes, r.hours, 60);
-
-	r.hours += s.hours;
-
+	long ms = f.ToMilliseconds() + s.ToMilliseconds();
+	SrtTime r(ms);
 	return r;
+}
+
+SrtTime& operator+=(SrtTime& f, long ms)
+{
+	ms += f.ToMilliseconds();
+	f.FromMilliseconds(ms);
+	return f;
 }
 
 SrtTime operator-(const SrtTime& f, const SrtTime& s)
 {
-	(void)f; (void)s;
-
-	SrtTime r;
+	long ms = f.ToMilliseconds() - s.ToMilliseconds();
+	SrtTime r(ms);
 	return r;
 }
 
 bool operator==(const SrtTime& f, const SrtTime& s)
 {
-	return f.hours == s.hours
+	return f.is_negative == s.is_negative
+		&& f.hours == s.hours
 		&& f.minutes == s.minutes
 		&& f.seconds == s.seconds
 		&& f.milliseconds == s.milliseconds;
@@ -90,42 +117,22 @@ bool operator!=(const SrtTime& f, const SrtTime& s)
 
 bool operator<(const SrtTime& f, const SrtTime& s)
 {
-	if (f.hours > s.hours)
-		return false;
-
-	if (f.hours == s.hours) {
-		if (f.minutes > s.minutes)
-			return false;
-
-		if (f.minutes == s.minutes) {
-			if (f.seconds > s.seconds)
-				return false;
-
-			if (f.seconds == s.seconds)
-				return f.milliseconds < s.milliseconds;
-			else
-				return true;
-		} else
-			return true;
-	} else
-		return true;
-
-	return false;
+	return f.ToMilliseconds() < s.ToMilliseconds();
 }
 
 bool operator<=(const SrtTime& f, const SrtTime& s)
 {
-	return f < s || f == s;
+	return f.ToMilliseconds() <= s.ToMilliseconds();
 }
 
 bool operator>(const SrtTime& f, const SrtTime& s)
 {
-	return s < f;
+	return f.ToMilliseconds() > s.ToMilliseconds();
 }
 
 bool operator>=(const SrtTime& f, const SrtTime& s)
 {
-	return f > s || f == s;
+	return f.ToMilliseconds() >= s.ToMilliseconds();
 }
 
 
@@ -139,6 +146,12 @@ std::ostream& operator<<(std::ostream& output, const SrtTime& t)
 std::istream& operator>>(std::istream& input, SrtTime& t)
 {
 	char ch;
+	input >> ch;
+	if (ch == '-')
+		t.is_negative = true;
+	else
+		input.putback(ch);
+
 	input >> t.hours >> ch;
 	input >> t.minutes >> ch;
 	input >> t.seconds >> ch;
