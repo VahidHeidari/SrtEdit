@@ -4,6 +4,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <utility>
 
 using namespace std;
@@ -18,7 +19,7 @@ static inline int ToInt(const char* str)
 
 	if (ch == '-') {
 		is_negative = true;
-		++str;
+		ch = *(++str);
 	}
 
 	while (ch && isdigit(ch)) {
@@ -210,13 +211,13 @@ SrtEditor::FindCommandType(const string& command) const
 
 void SrtEditor::PrintCommands() const
 {
-	cout << "help                         This help menu." << endl;
-	cout << "quit                         Quits the application!" << endl;
-	cout << "print from:REC to:REC        Print from-to." << endl;
-	cout << "save PATH                    "
+	cout << "help                                  This help menu." << endl;
+	cout << "quit                                  Quits the application!" << endl;
+	cout << "print from:REC to:REC                 Print from-to." << endl;
+	cout << "save PATH                             "
 		<< "Saves the modified srt file to the given path." << endl;
-	cout << "sync TIME                    Syncs all records." << endl;
-	cout << "rsync from:REC to:RED TIME   Sync records from-to." << endl;
+	cout << "sync time:TIME(ms)                    Syncs all records." << endl;
+	cout << "rsync from:REC to:RED time:TIME(ms)   Sync records from-to." << endl;
 	cout << endl;
 }
 
@@ -248,7 +249,11 @@ bool SrtEditor::Save(const std::string& command) const
 
 void SrtEditor::Sync(const std::string& command)
 {
-	(void)command;
+	// Create rsync command and process it!
+	stringstream sstr;
+	long ms = ParseMilliseconds(command);
+	sstr << "rsync from:1 to:" << records.size() << " time:" << ms;
+	SyncRecords(sstr.str());
 }
 
 void SrtEditor::SyncRecords(const std::string& command)
