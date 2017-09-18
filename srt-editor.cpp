@@ -136,14 +136,26 @@ bool SrtEditor::ReadRecords(const char* file_path)
 	return !input_file.is_open();
 }
 
+void SrtEditor::AddNums()
+{
+	for (unsigned i = 1; i <= records.size(); ++i) {
+		stringstream sstr;
+		SrtRecord& rec = records[i - 1];
+		sstr << i << '.' << rec.text;
+		rec.text = sstr.str();
+	}
+}
+
 void SrtEditor::DoCommand(const string& command)
 {
 	CommandType type = FindCommandType(command);
 
 	switch (type) {
+		case CMD_ADD_NUMS:		AddNums();				break;
 		case CMD_HELP:			PrintCommands();		break;
 		case CMD_PRINT:			Print(command);			break;
 		case CMD_PRINT_STATS:	PrintStats();			break;
+		case CMD_REMOVE_NUMS:	RemoveNums();			break;
 		case CMD_SAVE:			Save(command);			break;
 		case CMD_SYNC:			Sync(command);			break;
 		case CMD_SYNC_RECORDS:	SyncRecords(command);	break;
@@ -163,6 +175,11 @@ SrtEditor::FindCommandType(const string& command) const
 		return CMD_UNKNOWN;
 
 	switch (command[0]) {
+		case 'a':
+			if (command == "adnums")
+				return CMD_ADD_NUMS;
+			break;
+
 		case 'h':
 			if (command == "help")
 				return CMD_HELP;
@@ -180,8 +197,11 @@ SrtEditor::FindCommandType(const string& command) const
 			break;
 
 		case 'r':
-			if (command.size() < 5)
-				return CMD_UNKNOWN;
+			if (command.size() < 6)
+				break;
+
+			if (command == "rmnums")
+				return CMD_REMOVE_NUMS;
 
 			if (strncmp(command.c_str(), "rsync", 5) == 0)
 				return CMD_SYNC_RECORDS;
@@ -212,12 +232,14 @@ SrtEditor::FindCommandType(const string& command) const
 void SrtEditor::PrintCommands() const
 {
 	cout << "help                                  This help menu." << endl;
-	cout << "quit                                  Quits the application!" << endl;
+	cout << "quit                                  Quit the application!" << endl;
 	cout << "print from:REC to:REC                 Print from-to." << endl;
 	cout << "save PATH                             "
-		<< "Saves the modified srt file to the given path." << endl;
-	cout << "sync time:TIME(ms)                    Syncs all records." << endl;
+		<< "Save the modified srt file to the given path." << endl;
+	cout << "sync time:TIME(ms)                    Sync all records." << endl;
 	cout << "rsync from:REC to:RED time:TIME(ms)   Sync records from-to." << endl;
+	cout << "adnums                                Add subtitle numbers." << endl;
+	cout << "rmnums                                Remove subtitle numbers." << endl;
 	cout << endl;
 }
 
@@ -228,6 +250,20 @@ void SrtEditor::Print(const std::string& command) const
 	// Print records.
 	while (range.first < range.second)
 		cout << records[range.first++];
+}
+
+void SrtEditor::RemoveNums()
+{
+	for (unsigned i = 0; i < records.size(); ++i) {
+		SrtRecord& rec = records[i];
+		string::size_type point_pos = 0;
+		while (isdigit(rec.text[point_pos]))
+			++point_pos;
+		if (0 == point_pos || rec.text[point_pos] != '.')
+			continue;
+		++point_pos;
+		rec.text = rec.text.substr(point_pos);
+	}
 }
 
 bool SrtEditor::Save(const std::string& command) const

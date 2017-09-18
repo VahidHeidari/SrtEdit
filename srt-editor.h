@@ -11,9 +11,11 @@ class SrtEditor
 public:
 	enum CommandType
 	{
+		CMD_ADD_NUMS,
 		CMD_HELP,
 		CMD_PRINT,
 		CMD_PRINT_STATS,
+		CMD_REMOVE_NUMS,
 		CMD_SAVE,
 		CMD_SYNC,
 		CMD_SYNC_RECORDS,
@@ -32,10 +34,12 @@ public:
 	bool ReadRecords(const char* file_path);
 
 private:
+	void AddNums();
 	void DoCommand(const std::string& command);
 	CommandType FindCommandType(const std::string& command) const;
 	void PrintCommands() const;
 	void Print(const std::string& command) const;
+	void RemoveNums();
 	bool Save(const std::string& command) const;
 	void Sync(const std::string& commnad);
 	void SyncRecords(const std::string& command);
